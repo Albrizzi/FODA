@@ -1,0 +1,46 @@
+function seleccionarYLeerArchivoTXT() {
+  try {
+    // Seleccionar el archivo desde Google Drive
+    var fileIterator = DriveApp.getFilesByName('FODA.txt');
+    if (!fileIterator.hasNext()) {
+      throw new Error('El archivo "FODA.txt" no se encuentra en Google Drive.');
+    }
+    
+    var file = fileIterator.next();
+    var text = file.getAs('text/plain').getDataAsString();
+    
+    // Dividir el contenido del archivo en líneas
+    var lines = text.split('\n');
+    var form = FormApp.create('SWOT Analysis Survey');
+    
+    // Filtrar y procesar líneas
+    var paragraphs = lines.map(function(line) { 
+      return line.trim(); 
+    }).filter(function(line) {
+      return line.length > 0;
+    });
+    
+    // Agregar preguntas para cada párrafo comparado con todos los demás
+    for (var i = 0; i < paragraphs.length; i++) {
+      for (var j = 0; j < paragraphs.length; j++) {
+        var question;
+        var choices;
+        if (i !== j) {  // Evitar comparar el mismo párrafo consigo mismo
+          question = `¿Cómo relacionas "${paragraphs[i]}" con "${paragraphs[j]}"? (0-4)`;
+          choices = ['0', '1', '2', '3', '4'];
+        } else {
+          question = `El párrafo "${paragraphs[i]}" no se debe comparar consigo mismo. Se asigna un valor de 0 automáticamente.`;
+          choices = ['0']; // Solo opción 0 ya que es el valor asignado automáticamente
+        }
+        form.addMultipleChoiceItem()
+            .setTitle(question)
+            .setChoiceValues(choices)
+            .setRequired(true);
+      }
+    }
+    
+    Logger.log('Formulario creado: ' + form.getEditUrl());
+  } catch (e) {
+    Logger.log('Error: ' + e.message);
+  }
+}
